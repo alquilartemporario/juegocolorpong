@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>Color Pong Arena - Dificultad</title>
+<title>Color Pong Arena - Ajustado</title>
 
 <style>
 body{
@@ -12,7 +12,6 @@ body{
     font-family:Arial;
 }
 
-/* 🎮 MENU */
 #menu{
     position:absolute;
     width:100%;
@@ -79,7 +78,6 @@ function randomColor(){
 
 // 🎵 AUDIO
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-
 let musicStarted = false;
 
 const notes = {
@@ -90,9 +88,13 @@ const notes = {
     A:440
 };
 
-const melody = ["A","G","E","D","C","D","E","G","E","D","C","A"];
+const melody = [
+    "A","G","E","D",
+    "C","D","E","G",
+    "E","D","C","A"
+];
 
-function play(freq, duration=0.3, vol=0.02){
+function play(freq, duration=0.6, vol=0.015){
     const osc = audioCtx.createOscillator();
     const gain = audioCtx.createGain();
 
@@ -135,9 +137,8 @@ function startGame(diff){
 
     document.getElementById("menu").style.display = "none";
 
-    // 🟦 POSICIONES CORRECTAS
-    p1 = createPlayer(canvas.width * 0.25);
-    p2 = createPlayer(canvas.width * 0.75);
+    p1 = createPlayer(canvas.width * 0.15);
+    p2 = createPlayer(canvas.width * 0.85);
 
     ball = {
         x:canvas.width/2,
@@ -161,8 +162,8 @@ function startGame(diff){
 // 🎵 MUSIC
 function startMusic(){
     setInterval(()=>{
-        play(notes[melody[Math.floor(Math.random()*melody.length)]],0.4,0.015);
-    }, 500);
+        play(notes[melody[Math.floor(Math.random()*melody.length)]],0.6,0.015);
+    }, 700);
 }
 
 // INPUT
@@ -212,15 +213,16 @@ function drawScore(){
     ctx.fillText(score, canvas.width/2,40);
 }
 
+// 🩷 OBSTÁCULO ROSA + MÁS ANGOSTO
 function drawObstacle(){
     if(!obstacle) return;
 
-    ctx.fillStyle = "white";
+    ctx.fillStyle = "#ff4fd8"; // rosa
     ctx.fillRect(obstacle.x, obstacle.y, obstacle.w, obstacle.h);
 
     ctx.fillStyle = "black";
     ctx.font = "30px Arial";
-    ctx.fillText(obstacleHP, obstacle.x + 40, obstacle.y + 80);
+    ctx.fillText(obstacleHP, obstacle.x + 20, obstacle.y + 80);
 }
 
 // 🔄 UPDATE
@@ -256,6 +258,7 @@ function update(){
         ball.speed = Math.min(ball.speed, 10);
 
         score++;
+
         ball.color = randomColor();
 
         if(score % 10 === 0){
@@ -281,6 +284,7 @@ function update(){
         hit(p2, -1);
     }
 
+    // 🧱 OBSTÁCULO (SIN CAMBIO DE COLOR DE LA PELOTA)
     if(obstacle){
         if(ball.x > obstacle.x &&
            ball.x < obstacle.x + obstacle.w &&
@@ -288,20 +292,22 @@ function update(){
            ball.y < obstacle.y + obstacle.h){
 
             ball.dx *= -1;
-            ball.color = randomColor();
+
+            // ❌ eliminado: ya no cambia color
+            // ball.color = randomColor();
         }
     }
 }
 
-// 🧱 obstacle
+// 🧱 spawn OBSTÁCULO MÁS ANGOSTO
 function spawnObstacle(){
 
     let level = Math.floor(score / 10);
 
     obstacle = {
-        x:canvas.width/2 - 60,
+        x:canvas.width/2 - 40,
         y:canvas.height/2 - 80,
-        w:120,
+        w:80,   // más angosto
         h:160
     };
 
