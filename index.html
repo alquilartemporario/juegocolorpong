@@ -28,8 +28,12 @@ canvas{
 const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
 
-canvas.width = window.innerWidth;
-canvas.height = window.innerHeight * 0.6;
+function resize(){
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight * 0.6;
+}
+window.addEventListener("resize", resize);
+resize();
 
 // 🎨 COLORES
 const colores = ["red","yellow","blue","lime"];
@@ -38,8 +42,10 @@ function randomColor(){
     return colores[Math.floor(Math.random()*colores.length)];
 }
 
-// 🎵 MUSICA RELAJADA
+// 🎵 AUDIO (inicia con interacción)
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+let musicStarted = false;
 
 const notes = {
     C:261,
@@ -55,7 +61,7 @@ const melody = [
     "E","D","C","A"
 ];
 
-function play(freq, duration=0.35, vol=0.03){
+function play(freq, duration=0.35, vol=0.02){
     const osc = audioCtx.createOscillator();
     const gain = audioCtx.createGain();
 
@@ -74,12 +80,10 @@ let step = 0;
 
 function startMusic(){
     setInterval(()=>{
-        play(notes[melody[step]],0.4,0.02);
+        play(notes[melody[step]],0.4,0.015);
         step = (step + 1) % melody.length;
-    }, 500);
+    }, 520);
 }
-
-startMusic();
 
 // 🟦 JUGADORES
 function createPlayer(x){
@@ -109,7 +113,7 @@ let score = 0;
 let gameOver = false;
 let countdown = 0;
 
-// 🧱 OBSTÁCULO CENTRAL
+// 🧱 OBSTÁCULO
 let obstacle = null;
 let obstacleHP = 0;
 
@@ -118,6 +122,12 @@ const keys = {};
 
 document.addEventListener("keydown", e=>{
     keys[e.key] = true;
+
+    // 🎵 start music on first input (fix Chrome autoplay)
+    if(!musicStarted){
+        startMusic();
+        musicStarted = true;
+    }
 
     if(e.key==="q") p1.color="red";
     if(e.key==="e") p1.color="yellow";
@@ -157,7 +167,6 @@ function drawScore(){
     ctx.fillText(score, canvas.width/2,40);
 }
 
-// 🧱 DRAW OBSTÁCULO
 function drawObstacle(){
     if(!obstacle) return;
 
@@ -166,7 +175,7 @@ function drawObstacle(){
 
     ctx.fillStyle = "black";
     ctx.font = "30px Arial";
-    ctx.fillText(obstacleHP, obstacle.x + 30, obstacle.y + 60);
+    ctx.fillText(obstacleHP, obstacle.x + 50, obstacle.y + 80);
 }
 
 // 🔄 UPDATE
@@ -199,12 +208,11 @@ function update(){
         ball.dx = side * Math.abs(ball.dx);
 
         ball.speed *= 1.02;
-        ball.speed = Math.min(ball.speed, 8);
+        ball.speed = Math.min(ball.speed, 10);
 
         score++;
         ball.color = randomColor();
 
-        // 🧱 spawn obstáculo cada 10 golpes
         if(score % 10 === 0){
             spawnObstacle();
         }
@@ -212,7 +220,8 @@ function update(){
         play(500);
     }
 
-    if(ball.x < p1.x - 50 || ball.x > p2.x + 50){
+    // ⚠️ FIX: pérdida justa (solo si se va realmente fuera)
+    if(ball.x < -100 || ball.x > canvas.width + 100){
         triggerGameOver();
     }
 
@@ -228,7 +237,7 @@ function update(){
         hit(p2, -1);
     }
 
-    // ⚽ colisión con obstáculo
+    // 🧱 obstacle collision
     if(obstacle){
         if(ball.x > obstacle.x &&
            ball.x < obstacle.x + obstacle.w &&
@@ -241,8 +250,9 @@ function update(){
     }
 }
 
-// 🧱 SPAWN OBSTÁCULO (centro)
+// 🧱 spawn obstacle
 function spawnObstacle(){
+
     let level = Math.floor(score / 10);
 
     obstacle = {
@@ -252,10 +262,10 @@ function spawnObstacle(){
         h:160
     };
 
-    obstacleHP = level; // 10=1, 20=2, 30=3...
+    obstacleHP = Math.max(1, level);
 }
 
-// 💥 romper obstáculo
+// 💥 break obstacle
 function breakObstacle(){
     if(!obstacle) return;
 
