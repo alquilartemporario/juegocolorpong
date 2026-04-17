@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>Color Pong Arena</title>
+<title>Color Pong Arena - Dificultad</title>
 
 <style>
 body{
@@ -11,6 +11,32 @@ body{
     overflow:hidden;
     font-family:Arial;
 }
+
+/* 🎮 MENU */
+#menu{
+    position:absolute;
+    width:100%;
+    height:100%;
+    background:#020617;
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    align-items:center;
+    color:white;
+    gap:20px;
+}
+
+button{
+    padding:15px 30px;
+    font-size:20px;
+    border:none;
+    cursor:pointer;
+    border-radius:10px;
+}
+
+.easy{background:#22c55e;}
+.normal{background:#eab308;}
+.hard{background:#ef4444;}
 
 canvas{
     display:block;
@@ -21,6 +47,16 @@ canvas{
 </head>
 
 <body>
+
+<!-- 🎮 MENU -->
+<div id="menu">
+    <h1>COLOR PONG</h1>
+    <h3>Selecciona dificultad</h3>
+
+    <button class="easy" onclick="startGame(0.25)">FÁCIL (25%)</button>
+    <button class="normal" onclick="startGame(0.5)">NORMAL (50%)</button>
+    <button class="hard" onclick="startGame(1)">PRO (100%)</button>
+</div>
 
 <canvas id="game"></canvas>
 
@@ -55,11 +91,7 @@ const notes = {
     A:440
 };
 
-const melody = [
-    "A","G","E","D",
-    "C","D","E","G",
-    "E","D","C","A"
-];
+const melody = ["A","G","E","D","C","D","E","G","E","D","C","A"];
 
 function play(freq, duration=0.35, vol=0.02){
     const osc = audioCtx.createOscillator();
@@ -76,58 +108,67 @@ function play(freq, duration=0.35, vol=0.02){
     osc.stop(audioCtx.currentTime + duration);
 }
 
-let step = 0;
-
-function startMusic(){
-    setInterval(()=>{
-        play(notes[melody[step]],0.4,0.015);
-        step = (step + 1) % melody.length;
-    }, 520);
-}
-
-// 🟦 JUGADORES (mitad de tamaño + más cerca del borde)
+// 🟦 JUGADORES
 function createPlayer(x){
     return {
         x,
-        y:canvas.height/2-60, // 🔥 antes 120
+        y:canvas.height/2-60,
         w:20,
-        h:120, // 🔥 mitad de 240
+        h:120,
         color:"white"
     }
 }
 
-// 🔥 más cerca del borde
-const p1 = createPlayer(30);
-const p2 = createPlayer(canvas.width - 50);
-
-// ⚽ PELOTA (-20% velocidad inicial)
-let ball = {
-    x:canvas.width/2,
-    y:canvas.height/2,
-    dx:12.8,   // antes 16 → -20%
-    dy:4,
-    speed:1,
-    color:randomColor()
-};
-
+let p1, p2, ball;
 let score = 0;
 let gameOver = false;
 let countdown = 0;
-
-// 🧱 OBSTÁCULO
 let obstacle = null;
 let obstacleHP = 0;
+let speedMultiplier = 1;
 
 // ⌨️ INPUT
 const keys = {};
 
-document.addEventListener("keydown", e=>{
-    keys[e.key] = true;
+// 🎮 START GAME
+function startGame(diff){
+
+    speedMultiplier = diff;
+
+    document.getElementById("menu").style.display = "none";
+
+    p1 = createPlayer(canvas.width * 0.25);
+    p2 = createPlayer(canvas.width * 0.75 - 20);
+
+    ball = {
+        x:canvas.width/2,
+        y:canvas.height/2,
+        dx:16 * speedMultiplier,
+        dy:5 * speedMultiplier,
+        speed:1,
+        color:randomColor()
+    };
+
+    score = 0;
+    gameOver = false;
+    obstacle = null;
 
     if(!musicStarted){
         startMusic();
         musicStarted = true;
     }
+}
+
+// 🎵 MUSIC
+function startMusic(){
+    setInterval(()=>{
+        play(notes[melody[Math.floor(Math.random()*melody.length)]],0.4,0.015);
+    }, 500);
+}
+
+// INPUT
+document.addEventListener("keydown", e=>{
+    keys[e.key] = true;
 
     if(e.key==="q") p1.color="red";
     if(e.key==="e") p1.color="yellow";
@@ -155,6 +196,7 @@ function drawPlayer(p){
 }
 
 function drawBall(){
+    if(!ball) return;
     ctx.beginPath();
     ctx.arc(ball.x,ball.y,20,0,Math.PI*2);
     ctx.fillStyle = ball.color;
@@ -175,13 +217,13 @@ function drawObstacle(){
 
     ctx.fillStyle = "black";
     ctx.font = "30px Arial";
-    ctx.fillText(obstacleHP, obstacle.x + 50, obstacle.y + 80);
+    ctx.fillText(obstacleHP, obstacle.x + 40, obstacle.y + 80);
 }
 
 // 🔄 UPDATE
 function update(){
 
-    if(gameOver) return;
+    if(gameOver || !ball) return;
 
     if(keys["w"]) p1.y -= 9;
     if(keys["s"]) p1.y += 9;
@@ -208,7 +250,6 @@ function update(){
         ball.dx = side * Math.abs(ball.dx);
 
         ball.speed *= 1.02;
-        ball.speed = Math.min(ball.speed, 10);
 
         score++;
         ball.color = randomColor();
@@ -220,7 +261,6 @@ function update(){
         play(500);
     }
 
-    // ❗ salida segura
     if(ball.x < -100 || ball.x > canvas.width + 100){
         triggerGameOver();
     }
@@ -249,7 +289,7 @@ function update(){
     }
 }
 
-// 🧱 spawn obstacle
+// 🧱 obstacle
 function spawnObstacle(){
 
     let level = Math.floor(score / 10);
@@ -264,12 +304,11 @@ function spawnObstacle(){
     obstacleHP = Math.max(1, level);
 }
 
-// 💥 break obstacle
+// 💥 break
 function breakObstacle(){
     if(!obstacle) return;
 
     obstacleHP--;
-
     play(800,0.1,0.05);
 
     if(obstacleHP <= 0){
@@ -297,8 +336,8 @@ function reset(){
 
     ball.x = canvas.width/2;
     ball.y = canvas.height/2;
-    ball.dx = 12.8;
-    ball.dy = 4;
+    ball.dx = 16 * speedMultiplier;
+    ball.dy = 5 * speedMultiplier;
     ball.speed = 1;
 
     score = 0;
@@ -309,11 +348,13 @@ function reset(){
 function loop(){
     ctx.clearRect(0,0,canvas.width,canvas.height);
 
-    drawPlayer(p1);
-    drawPlayer(p2);
-    drawBall();
-    drawScore();
-    drawObstacle();
+    if(p1 && p2 && ball){
+        drawPlayer(p1);
+        drawPlayer(p2);
+        drawBall();
+        drawScore();
+        drawObstacle();
+    }
 
     update();
 
