@@ -24,6 +24,7 @@ body{
     align-items:center;
     color:white;
     gap:20px;
+    z-index:10;
 }
 
 button{
@@ -48,7 +49,6 @@ canvas{
 
 <body>
 
-<!-- 🎮 MENU -->
 <div id="menu">
     <h1>COLOR PONG</h1>
     <h3>Selecciona dificultad</h3>
@@ -73,7 +73,6 @@ resize();
 
 // 🎨 COLORES
 const colores = ["red","yellow","blue","lime"];
-
 function randomColor(){
     return colores[Math.floor(Math.random()*colores.length)];
 }
@@ -93,7 +92,7 @@ const notes = {
 
 const melody = ["A","G","E","D","C","D","E","G","E","D","C","A"];
 
-function play(freq, duration=0.35, vol=0.02){
+function play(freq, duration=0.3, vol=0.02){
     const osc = audioCtx.createOscillator();
     const gain = audioCtx.createGain();
 
@@ -127,7 +126,6 @@ let obstacle = null;
 let obstacleHP = 0;
 let speedMultiplier = 1;
 
-// ⌨️ INPUT
 const keys = {};
 
 // 🎮 START GAME
@@ -137,8 +135,9 @@ function startGame(diff){
 
     document.getElementById("menu").style.display = "none";
 
+    // 🟦 POSICIONES CORRECTAS
     p1 = createPlayer(canvas.width * 0.25);
-    p2 = createPlayer(canvas.width * 0.75 - 20);
+    p2 = createPlayer(canvas.width * 0.75);
 
     ball = {
         x:canvas.width/2,
@@ -170,6 +169,11 @@ function startMusic(){
 document.addEventListener("keydown", e=>{
     keys[e.key] = true;
 
+    if(!musicStarted && ball){
+        startMusic();
+        musicStarted = true;
+    }
+
     if(e.key==="q") p1.color="red";
     if(e.key==="e") p1.color="yellow";
     if(e.key==="a") p1.color="blue";
@@ -196,7 +200,6 @@ function drawPlayer(p){
 }
 
 function drawBall(){
-    if(!ball) return;
     ctx.beginPath();
     ctx.arc(ball.x,ball.y,20,0,Math.PI*2);
     ctx.fillStyle = ball.color;
@@ -250,6 +253,7 @@ function update(){
         ball.dx = side * Math.abs(ball.dx);
 
         ball.speed *= 1.02;
+        ball.speed = Math.min(ball.speed, 10);
 
         score++;
         ball.color = randomColor();
