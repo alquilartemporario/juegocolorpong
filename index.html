@@ -42,7 +42,7 @@ function randomColor(){
     return colores[Math.floor(Math.random()*colores.length)];
 }
 
-// 🎵 AUDIO (inicia con interacción)
+// 🎵 AUDIO
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
 let musicStarted = false;
@@ -85,26 +85,27 @@ function startMusic(){
     }, 520);
 }
 
-// 🟦 JUGADORES
+// 🟦 JUGADORES (mitad de tamaño + más cerca del borde)
 function createPlayer(x){
     return {
         x,
-        y:canvas.height/2-120,
+        y:canvas.height/2-60, // 🔥 antes 120
         w:20,
-        h:240,
+        h:120, // 🔥 mitad de 240
         color:"white"
     }
 }
 
-const p1 = createPlayer(canvas.width * 0.25);
-const p2 = createPlayer(canvas.width * 0.75 - 20);
+// 🔥 más cerca del borde
+const p1 = createPlayer(30);
+const p2 = createPlayer(canvas.width - 50);
 
-// ⚽ PELOTA
+// ⚽ PELOTA (-20% velocidad inicial)
 let ball = {
     x:canvas.width/2,
     y:canvas.height/2,
-    dx:16,
-    dy:5,
+    dx:12.8,   // antes 16 → -20%
+    dy:4,
     speed:1,
     color:randomColor()
 };
@@ -123,7 +124,6 @@ const keys = {};
 document.addEventListener("keydown", e=>{
     keys[e.key] = true;
 
-    // 🎵 start music on first input (fix Chrome autoplay)
     if(!musicStarted){
         startMusic();
         musicStarted = true;
@@ -220,7 +220,7 @@ function update(){
         play(500);
     }
 
-    // ⚠️ FIX: pérdida justa (solo si se va realmente fuera)
+    // ❗ salida segura
     if(ball.x < -100 || ball.x > canvas.width + 100){
         triggerGameOver();
     }
@@ -237,7 +237,6 @@ function update(){
         hit(p2, -1);
     }
 
-    // 🧱 obstacle collision
     if(obstacle){
         if(ball.x > obstacle.x &&
            ball.x < obstacle.x + obstacle.w &&
@@ -298,8 +297,8 @@ function reset(){
 
     ball.x = canvas.width/2;
     ball.y = canvas.height/2;
-    ball.dx = 16;
-    ball.dy = 5;
+    ball.dx = 12.8;
+    ball.dy = 4;
     ball.speed = 1;
 
     score = 0;
